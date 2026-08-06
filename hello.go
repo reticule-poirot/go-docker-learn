@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -15,7 +16,8 @@ func main() {
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-        hostname := os.Getenv("HOSTNAME")
+	hostname := os.Getenv("HOSTNAME")
+	log.Printf("Hello, I'm %v", hostname)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintln("Hello, I'm", hostname, "!")))
 }
