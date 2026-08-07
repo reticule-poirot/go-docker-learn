@@ -18,6 +18,11 @@ func health(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
+func ready(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ready"))
+}
+
 func home(w http.ResponseWriter, r *http.Request) {
 	hostname := os.Getenv("HOSTNAME")
 	log.Printf("Hello, I'm %v", hostname)
@@ -35,5 +40,6 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", home).Methods(http.MethodGet)
 	router.HandleFunc("/health", health).Methods(http.MethodGet)
+	router.HandleFunc("/ready", ready).Methods(http.MethodGet)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), router))
 }
