@@ -61,9 +61,16 @@ func readyHandler(w http.ResponseWriter, r *http.Request) {
 
 func home(w http.ResponseWriter, r *http.Request) {
 	hostname := os.Getenv("HOSTNAME")
-	slog.Info("handling request", "hostname", hostname, "path", r.URL.Path)
+	// NODE_NAME is not set by Kubernetes automatically like HOSTNAME (pod name) is —
+	// it must be injected via the Downward API in the pod spec (fieldRef: spec.nodeName).
+	// Falls back to "unknown" when running outside k8s (e.g. local/docker run).
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" {
+		nodeName = "unknown"
+	}
+	slog.Info("handling request", "hostname", hostname, "node", nodeName, "path", r.URL.Path)
 	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte(fmt.Sprintf("Hello, I'm %s!\n", hostname))); err != nil {
+	if _, err := w.Write([]byte(fmt.Sprintf("Hello, I'm %s (node: %s)!\n", hostname, nodeName))); err != nil {
 		slog.Error("home: write failed", "error", err)
 	}
 }
