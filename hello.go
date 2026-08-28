@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -70,7 +71,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("handling request", "hostname", hostname, "node", nodeName, "path", r.URL.Path)
 	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte(fmt.Sprintf("Hello, I'm %s, from node %s!\n", hostname, nodeName))); err != nil {
+	if _, err := w.Write(fmt.Appendf(nil, "Hello, I'm %s, from node %s!\n", hostname, nodeName)); err != nil {
 		slog.Error("home: write failed", "error", err)
 	}
 }
@@ -120,12 +121,22 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	// Serve in the background, mark ready once listening succeeds.
+	// Bind the listener synchronously here, so the socket is actually
+	// accepting connections before we ever mark ready=true. Previously
+	// ready was set inside ListenAndServe's goroutine before the bind
+	// happened, so a readiness probe landing in that gap saw "connection
+	// refused" on an otherwise-healthy startup (the FIXME below).
+	ln, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		slog.Error("failed to bind", "addr", srv.Addr, "error", err)
+		os.Exit(1)
+	}
+
 	serveErrCh := make(chan error, 1)
 	go func() {
 		ready.Store(true)
 		slog.Info("marked ready")
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serveErrCh <- err
 			return
 		}
