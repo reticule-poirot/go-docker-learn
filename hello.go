@@ -35,7 +35,7 @@ func withMetrics(next http.HandlerFunc) http.HandlerFunc {
 
 // health is the liveness probe: process is up and not deadlocked.
 // Deliberately cheap — no dependency checks.
-func health(w http.ResponseWriter, r *http.Request) {
+func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte("ok")); err != nil {
 		slog.Error("health: write failed", "error", err)
@@ -59,7 +59,7 @@ func readyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
+func homeHandler(w http.ResponseWriter, r *http.Request) {
 	hostname := os.Getenv("HOSTNAME")
 	// NODE_NAME is not set by Kubernetes automatically like HOSTNAME (pod name) is —
 	// it must be injected via the Downward API in the pod spec (fieldRef: spec.nodeName).
@@ -78,7 +78,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 // metrics is a minimal hand-rolled Prometheus-text-format endpoint.
 // No external dependency; swap in a real client library if the
 // metric surface grows beyond a handful of counters/gauges.
-func metrics(w http.ResponseWriter, r *http.Request) {
+func metricsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 	uptime := time.Since(startTime).Seconds()
 	readyVal := 0
@@ -96,7 +96,7 @@ func metrics(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "app_ready %d\n", readyVal)
 }
 
-func main() {
+func mainHanler() {
 	flag.IntVar(&port, "port", 8000, "an int")
 	flag.Parse()
 
@@ -106,10 +106,10 @@ func main() {
 	slog.Info("starting server", "port", port)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", withMetrics(home))
-	mux.HandleFunc("GET /health", withMetrics(health))
-	mux.HandleFunc("GET /ready", withMetrics(readyHandler))
-	mux.HandleFunc("GET /metrics", metrics)
+	mux.HandleFunc("GET /", withMetrics(homeHandler))
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /ready", readyHandler)
+	mux.HandleFunc("GET /metrics", metricsHandler)
 
 	srv := &http.Server{
 		Addr:              ":" + strconv.Itoa(port),
