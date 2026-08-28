@@ -96,7 +96,7 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "app_ready %d\n", readyVal)
 }
 
-func mainHanler() {
+func main() {
 	flag.IntVar(&port, "port", 8000, "an int")
 	flag.Parse()
 
