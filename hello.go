@@ -70,7 +70,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("handling request", "hostname", hostname, "node", nodeName, "path", r.URL.Path)
 	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte(fmt.Sprintf("Hello, I'm %s (node: %s)!\n", hostname, nodeName))); err != nil {
+	if _, err := w.Write([]byte(fmt.Sprintf("Hello, I'm %s, from node %s!\n", hostname, nodeName))); err != nil {
 		slog.Error("home: write failed", "error", err)
 	}
 }
